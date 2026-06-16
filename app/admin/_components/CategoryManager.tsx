@@ -19,7 +19,7 @@ export function CategoryManager({ categories }: { categories: { id: string; name
 
     const { error } = await supabase
       .from('categories')
-      .insert({ name: newCategory.trim() })
+      .insert([{ name: newCategory.trim() }] as any)
 
     if (error) {
       setError(error.message)
@@ -36,7 +36,7 @@ export function CategoryManager({ categories }: { categories: { id: string; name
     const { error } = await supabase
       .from('categories')
       .delete()
-      .eq('id', id)
+      .eq('id', id as any)
 
     if (error) {
       setError(error.message)
