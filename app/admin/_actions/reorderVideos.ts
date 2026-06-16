@@ -13,7 +13,7 @@ export async function reorderVideos(videoIds: string[]) {
   }))
 
   for (const update of updates) {
-    await supabase
+    await (supabase as any)
       .from('help_videos')
       .update({ position: update.position })
       .eq('id', update.id)
