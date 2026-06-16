@@ -23,6 +23,7 @@ import { createClient } from "@/lib/supabase/client";
 import { useCategories } from '@/lib/hooks/useCategories';
 import { slugify, type VideoCategory } from "@/lib/utils";
 import Link from "next/link";
+import type { Database } from "@/lib/supabase/database.types";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -140,18 +141,16 @@ export default function NewVideoPage() {
 
       const slug = slugify(title);
 
-      const { error: dbError } = await supabase
+      const { error: dbError } = await (supabase as any)
         .from("help_videos")
-        .insert(
-          {
-            title: title.trim(),
-            slug,
-            description: description.trim() || null,
-            category,
-            video_url: videoUrl,
-            is_published: isPublished,
-          } as any
-        );
+        .insert({
+          title: title.trim(),
+          slug,
+          description: description.trim() || null,
+          category,
+          video_url: videoUrl,
+          is_published: isPublished,
+        });
 
       if (dbError) {
         throw new Error(`Database insert failed: ${dbError.message}`);

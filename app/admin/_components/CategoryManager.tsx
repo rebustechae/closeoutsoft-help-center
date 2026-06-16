@@ -4,6 +4,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
+import type { Database } from '@/lib/supabase/database.types'
 
 export function CategoryManager({ categories }: { categories: { id: string; name: string }[] }) {
   const router = useRouter()
@@ -17,9 +18,9 @@ export function CategoryManager({ categories }: { categories: { id: string; name
     setLoading(true)
     setError(null)
 
-    const { error } = await supabase
+    const { error } = await (supabase as any)
       .from('categories')
-      .insert([{ name: newCategory.trim() }] as any)
+      .insert([{ name: newCategory.trim() }])
 
     if (error) {
       setError(error.message)
@@ -36,7 +37,7 @@ export function CategoryManager({ categories }: { categories: { id: string; name
     const { error } = await supabase
       .from('categories')
       .delete()
-      .eq('id', id as any)
+      .eq('id', id)
 
     if (error) {
       setError(error.message)

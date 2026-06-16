@@ -5,6 +5,7 @@ import { useRouter, useParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { slugify } from "@/lib/utils";
 import { useCategories } from "@/lib/hooks/useCategories";
+import type { Database } from "@/lib/supabase/database.types";
 
 type Status =
   | { stage: "idle" }
@@ -51,12 +52,13 @@ export default function EditVideoPage() {
         return;
       }
 
-      setTitle(data.title);
-      setCategory(data.category);
-      setDescription(data.description ?? "");
-      setIsPublished(data.is_published);
-      setVideoUrl(data.video_url);
-      setOriginalSlug(data.slug);
+      const video = data as Database['public']['Tables']['help_videos']['Row'];
+      setTitle(video.title);
+      setCategory(video.category);
+      setDescription(video.description ?? "");
+      setIsPublished(video.is_published);
+      setVideoUrl(video.video_url);
+      setOriginalSlug(video.slug);
       setStatus({ stage: "idle" });
     }
 
@@ -70,15 +72,19 @@ export default function EditVideoPage() {
 
     const newSlug = title !== originalSlug ? slugify(title) : originalSlug;
 
-    const { error } = await supabase
+    const updateData = {
+      title: title.trim(),
+      slug: newSlug,
+      description: description.trim() || null,
+      category,
+      is_published: isPublished,
+    } satisfies Database['public']['Tables']['help_videos']['Update'];
+
+    const { error } = await (
+      supabase as ReturnType<typeof createClient> & { from: any }
+    )
       .from("help_videos")
-      .update({
-        title: title.trim(),
-        slug: newSlug,
-        description: description.trim() || null,
-        category,
-        is_published: isPublished,
-      })
+      .update(updateData)
       .eq("id", id);
 
     if (error) {

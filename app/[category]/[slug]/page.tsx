@@ -46,13 +46,13 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     .select('title, description')
     .eq('slug', slug)
     .eq('is_published', true)
-    .single() as { data: Pick<HelpVideo, 'title' | 'description'> | null }
+    .single()
 
   if (!video) return { title: 'Video Not Found' }
 
   return {
-    title: `${video.title} — Help Center`,
-    description: video.description ?? undefined,
+    title: `${(video as Pick<HelpVideo, 'title' | 'description'>).title} — Help Center`,
+    description: (video as Pick<HelpVideo, 'title' | 'description'>).description ?? undefined,
   }
 }
 
@@ -74,12 +74,14 @@ export default async function VideoTheaterPage({ params }: PageProps) {
     .select('*')
     .eq('slug', slug)
     .eq('is_published', true)
-    .single() as { data: HelpVideo | null; error: any }
+    .single()
 
   // Supabase returns an error when no row is found — treat both cases as 404.
   if (error || !video) {
     notFound()
   }
+
+  const typedVideo = video as HelpVideo
 
   // Decode category for display (the URL uses URL-encoded strings)
   const categoryLabel = decodeURIComponent(category)
@@ -131,7 +133,7 @@ export default async function VideoTheaterPage({ params }: PageProps) {
 
         {/* Video title */}
         <h1 className="mb-6 text-2xl font-semibold text-[#2A354B] sm:text-3xl leading-snug">
-          {video.title}
+          {typedVideo.title}
         </h1>
 
         {/* ── Video player ──────────────────────────────────────────────────
@@ -142,16 +144,16 @@ export default async function VideoTheaterPage({ params }: PageProps) {
         <div className="overflow-hidden rounded-lg ring-1 ring-white/10 shadow-2xl
                         shadow-black/60">
           <video
-            src={video.video_url}
+            src={typedVideo.video_url}
             controls
             playsInline
             preload="metadata"
             className="aspect-video w-full bg-black"
-            aria-label={`Video: ${video.title}`}
+            aria-label={`Video: ${typedVideo.title}`}
           >
             {/* Graceful fallback for browsers that can't play the video tag */}
             Your browser does not support the HTML5 video player.{' '}
-            <a href={video.video_url} className="underline">
+            <a href={typedVideo.video_url} className="underline">
               Download the video
             </a>{' '}
             instead.
@@ -160,9 +162,9 @@ export default async function VideoTheaterPage({ params }: PageProps) {
 
         {/* ── Metadata strip ── */}
         <div className="mt-6 flex items-center gap-4 text-xs text-gray-500">
-          <time dateTime={video.created_at}>
+          <time dateTime={typedVideo.created_at}>
             Published{' '}
-            {new Date(video.created_at).toLocaleDateString('en-US', {
+            {new Date(typedVideo.created_at).toLocaleDateString('en-US', {
               year: 'numeric',
               month: 'long',
               day: 'numeric',
@@ -171,14 +173,14 @@ export default async function VideoTheaterPage({ params }: PageProps) {
         </div>
 
         {/* ── Description ── */}
-        {video.description && (
+        {typedVideo.description && (
           <div className="mt-6 border-t border-white/10 pt-6">
             <h2 className="mb-2 text-sm font-semibold uppercase tracking-wider text-[#425b7d]">
               About this video
             </h2>
             {/* prose class from @tailwindcss/typography for well-formatted text */}
             <p className="prose prose-invert prose-sm max-w-none text-[#2A354B] leading-relaxed">
-              {video.description}
+              {typedVideo.description}
             </p>
           </div>
         )}
