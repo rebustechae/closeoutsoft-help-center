@@ -50,13 +50,32 @@ export interface Database {
           is_published?: boolean;
         };
       };
+
+      categories: {
+        Row: {
+          id: string;
+          created_at: string;
+          name: string;
+        };
+        Insert: {
+          id?: string;
+          created_at?: string;
+          name: string;
+        };
+        Update: {
+          id?: string;
+          created_at?: string;
+          name?: string;
+        };
+      };
     };
-    Views: Record<string, never>
-    Functions: Record<string, never>
-    Enums: Record<string, never>
+    Views: Record<string, never>;
+    Functions: Record<string, never>;
+    Enums: Record<string, never>;
   };
 }
 
-export type HelpVideo = Database['public']['Tables']['help_videos']['Row']
+export type HelpVideo = Database["public"]["Tables"]["help_videos"]["Row"];
 
-export type HelpVideoInsert = Database['public']['Tables']['help_videos']['Insert']
+export type HelpVideoInsert =
+  Database["public"]["Tables"]["help_videos"]["Insert"];
