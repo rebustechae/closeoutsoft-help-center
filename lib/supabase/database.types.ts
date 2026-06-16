@@ -26,6 +26,7 @@ export interface Database {
           category: string;
           video_url: string;
           is_published: boolean;
+          position: number;
         };
         Insert: {
           id?: string;
@@ -37,6 +38,7 @@ export interface Database {
           category: string;
           video_url: string;
           is_published?: boolean;
+          position?: number;
         };
         Update: {
           id?: string;
@@ -48,6 +50,7 @@ export interface Database {
           category?: string;
           video_url?: string;
           is_published?: boolean;
+          position?: number;
         };
       };
 

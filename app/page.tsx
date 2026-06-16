@@ -28,6 +28,7 @@ export default async function HelpCenterHomePage() {
     .from("help_videos")
     .select("*")
     .eq("is_published", true)
+    .order('position', { ascending: true })
     .order("created_at", { ascending: false });
 
   const allVideos = (videos as HelpVideo[] | null) ?? [];

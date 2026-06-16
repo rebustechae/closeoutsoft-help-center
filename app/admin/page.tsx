@@ -3,6 +3,7 @@ import { createServerSupabaseClient } from '@/lib/supabase/server'
 import Link from 'next/link'
 import { DeleteButton } from './_components/DeleteButton'
 import { CategoryManager } from './_components/CategoryManager'
+import { VideoDashboardFilter } from './_components/VideoDashboardFilter'
 
 type VideoRow = {
   id: string
@@ -19,6 +20,7 @@ export default async function AdminDashboardPage() {
   const { data: videos } = await supabase
     .from('help_videos')
     .select('id, title, category, is_published, created_at, slug')
+    .order('position', { ascending: true })
     .order('created_at', { ascending: false })
 
   const { data: categories } = await supabase
@@ -61,15 +63,17 @@ export default async function AdminDashboardPage() {
           </section>
         )}
 
-        {/* Published section */}
-        <section>
-          <h2 className="mb-3 text-xs font-semibold uppercase tracking-wider text-green-500">
-            Published
+        {/* Published section — with search, filter, and drag-to-reorder */}
+        <section className="mb-10">
+          <h2 className="mb-4 text-xs font-semibold uppercase tracking-wider text-green-500">
+            Published Videos
           </h2>
           {published.length === 0 ? (
-            <p className="text-sm text-gray-500">No published videos yet.</p>
+            <div className="rounded-xl border border-[#425b7d]/10 bg-white p-8 text-center">
+              <p className="text-sm text-gray-500">No published videos yet.</p>
+            </div>
           ) : (
-            <VideoTable videos={published} />
+            <VideoDashboardFilter videos={published} categories={categories ?? []} />
           )}
         </section>
         

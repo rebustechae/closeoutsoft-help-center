@@ -21,6 +21,7 @@ import { createServerSupabaseClient } from '@/lib/supabase/server'
 import type { Metadata } from 'next'
 import type { HelpVideo } from '@/lib/supabase/database.types'
 import { Header } from '@/app/_components/Header'
+import { VideoPlayer } from '@/app/_components/VideoPlayer'
 
 // ---------------------------------------------------------------------------
 // Types
@@ -141,24 +142,7 @@ export default async function VideoTheaterPage({ params }: PageProps) {
             w-full       = fills the container width
             The outer div provides the coloured border/glow treatment.
         ─────────────────────────────────────────────────────────────────── */}
-        <div className="overflow-hidden rounded-lg ring-1 ring-white/10 shadow-2xl
-                        shadow-black/60">
-          <video
-            src={typedVideo.video_url}
-            controls
-            playsInline
-            preload="metadata"
-            className="aspect-video w-full bg-black"
-            aria-label={`Video: ${typedVideo.title}`}
-          >
-            {/* Graceful fallback for browsers that can't play the video tag */}
-            Your browser does not support the HTML5 video player.{' '}
-            <a href={typedVideo.video_url} className="underline">
-              Download the video
-            </a>{' '}
-            instead.
-          </video>
-        </div>
+        <VideoPlayer src={typedVideo.video_url} title={typedVideo.title} />
 
         {/* ── Metadata strip ── */}
         <div className="mt-6 flex items-center gap-4 text-xs text-gray-500">

@@ -19,6 +19,7 @@ export function Header(){
                         width={128}
                         height={64}
                         className='object-contain'
+                        loading='eager'
                     />
                 </Link>
 
