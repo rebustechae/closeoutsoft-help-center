@@ -3,6 +3,7 @@
 
 import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
+import type { Database } from '@/lib/supabase/database.types'
 
 export function useCategories() {
     const [categories, setCategories] = useState<string[]>([])
@@ -13,7 +14,10 @@ export function useCategories() {
             .from('categories')
             .select('name')
             .order('name')
-            .then(({ data }) => setCategories(data?.map((c) => c.name) ?? []))
+            .then(({ data }) => {
+                const typedData = data as Pick<Database['public']['Tables']['categories']['Row'], 'name'>[] | null
+                setCategories(typedData?.map((c) => c.name) ?? [])
+            })
     }, [])
 
     return categories
