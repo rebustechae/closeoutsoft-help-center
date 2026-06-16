@@ -8,13 +8,15 @@
  * entirely in the browser (no extra round-trips on every keystroke).
  */
 
+import type { Metadata } from 'next';
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { VideoGrid } from "@/app/_components/VideoGrid";
+import type { HelpVideo } from "@/lib/supabase/database.types";
 import Link from 'next/link';
 import Image from "next/image";
 import { Header } from "./_components/Header";
 
-export const metadata = {
+export const metadata: Metadata = {
   title: "CloseoutSoft Help Center",
   description: "Video tutorials and guides for CloseoutSoft",
 };
@@ -28,7 +30,7 @@ export default async function HelpCenterHomePage() {
     .eq("is_published", true)
     .order("created_at", { ascending: false });
 
-  const allVideos = videos ?? [];
+  const allVideos = (videos as HelpVideo[] | null) ?? [];
 
   // Derive the unique category list (preserving insertion order)
   const categories = [...new Set(allVideos.map((v) => v.category))];

@@ -4,6 +4,15 @@ import Link from 'next/link'
 import { DeleteButton } from './_components/DeleteButton'
 import { CategoryManager } from './_components/CategoryManager'
 
+type VideoRow = {
+  id: string
+  title: string
+  category: string
+  is_published: boolean
+  created_at: string
+  slug: string
+}
+
 export default async function AdminDashboardPage() {
   const supabase = await createServerSupabaseClient()
 
@@ -17,7 +26,7 @@ export default async function AdminDashboardPage() {
     .select('id, name')
     .order('name')
 
-  const allVideos = videos ?? []
+  const allVideos = (videos as VideoRow[] | null) ?? []
   const published = allVideos.filter((v) => v.is_published)
   const drafts = allVideos.filter((v) => !v.is_published)
 
@@ -75,15 +84,6 @@ export default async function AdminDashboardPage() {
 // ---------------------------------------------------------------------------
 // Sub-component: table of videos (Server Component, no interactivity needed)
 // ---------------------------------------------------------------------------
-
-type VideoRow = {
-  id: string
-  title: string
-  category: string
-  is_published: boolean
-  created_at: string
-  slug: string
-}
 
 function VideoTable({ videos }: { videos: VideoRow[] }) {
   return (
