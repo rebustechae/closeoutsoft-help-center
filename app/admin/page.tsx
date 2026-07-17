@@ -49,7 +49,7 @@ export default async function AdminDashboardPage() {
             className="rounded-lg bg-[#6c4193] px-4 py-2 text-sm font-semibold
                        text-white hover:bg-[#6c4193]/90 transition-colors"
           >
-            + Upload video
+            + Upload Video
           </Link>
         </div>
 

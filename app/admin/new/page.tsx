@@ -1,15 +1,12 @@
 /**
  * app/admin/new/page.tsx
  *
- * Admin: Upload New Help Video
+ * Admin: Create New Help Video
  *
  * A Client Component form that:
- *  1. Collects title, category, description, and a video file.
- *  2. Uploads the video file DIRECTLY from the browser to Supabase Storage
- *     (bypasses Vercel's 4.5 MB serverless payload limit entirely).
- *  3. Retrieves the storage public URL.
- *  4. Auto-generates a slug from the title.
- *  5. Inserts a new row into help_videos with all metadata.
+ *  1. Collects title, category, description, and a video link.
+ *  2. Auto-generates a slug from the title.
+ *  3. Inserts a new row into help_videos with all metadata.
  *
  * Add basic route protection in middleware.ts or a layout.tsx to ensure
  * only authenticated team members can reach /admin/* routes.
@@ -17,7 +14,7 @@
 
 "use client";
 
-import { useState, useRef, useEffect, ChangeEvent, FormEvent } from "react";
+import { useState, useEffect, FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { useCategories } from '@/lib/hooks/useCategories';
@@ -29,9 +26,8 @@ import type { Database } from "@/lib/supabase/database.types";
 // Types
 // ---------------------------------------------------------------------------
 
-type UploadStatus =
+type CreateStatus =
   | { stage: "idle" }
-  | { stage: "uploading"; progress: number }
   | { stage: "saving" }
   | { stage: "success"; slug: string; category: string }
   | { stage: "error"; message: string };
@@ -50,28 +46,12 @@ export default function NewVideoPage() {
   const [category, setCategory] = useState('')
   const [description, setDescription] = useState("");
   const [isPublished, setIsPublished] = useState(false);
-  const [videoFile, setVideoFile] = useState<File | null>(null);
+  const [videoLink, setVideoLink] = useState("");
 
-  // ── Upload progress state ────────────────────────────────────────────────
-  const [status, setStatus] = useState<UploadStatus>({ stage: "idle" });
+  // ── Status state ────────────────────────────────────────────────────────
+  const [status, setStatus] = useState<CreateStatus>({ stage: "idle" });
 
-  const fileInputRef = useRef<HTMLInputElement>(null);
-
-  // ── Helpers ──────────────────────────────────────────────────────────────
-
-  /** Sanitise the file name for use as a storage path */
-  function buildStoragePath(file: File): string {
-    const timestamp = Date.now();
-    const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
-    return `${timestamp}-${safeName}`; // flat structure; add subfolders as needed
-  }
-
-  function handleFileChange(e: ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0] ?? null;
-    setVideoFile(file);
-    setStatus({ stage: "idle" });
-  }
-
+  // ── Set default category when categories load ────────────────────────────
   useEffect(() => {
     if (categories.length > 0 && !category) {
       setCategory(categories[0])
@@ -84,10 +64,10 @@ export default function NewVideoPage() {
     e.preventDefault();
 
     // Basic validation
-    if (!videoFile) {
+    if (!videoLink.trim()) {
       setStatus({
         stage: "error",
-        message: "Please select a video file before uploading.",
+        message: "Please enter a video link/URL.",
       });
       return;
     }
@@ -97,46 +77,6 @@ export default function NewVideoPage() {
     }
 
     try {
-      // ------------------------------------------------------------------
-      // PHASE 1: Upload the video file directly to Supabase Storage.
-      // This call goes browser → Supabase, completely bypassing Vercel.
-      // ------------------------------------------------------------------
-
-      setStatus({ stage: "uploading", progress: 0 });
-
-      const storagePath = buildStoragePath(videoFile);
-
-      const { error: uploadError } = await supabase.storage
-        .from("support-videos")
-        .upload(storagePath, videoFile, {
-          cacheControl: "3600",
-          upsert: false,
-          // Supabase JS v2 does not expose upload progress natively via XHR;
-          // for a real progress bar swap to a fetch+ReadableStream approach.
-        });
-
-      if (uploadError) {
-        throw new Error(`Storage upload failed: ${uploadError.message}`);
-      }
-
-      // ------------------------------------------------------------------
-      // PHASE 2: Retrieve the permanent public URL for the uploaded file.
-      // ------------------------------------------------------------------
-
-      const { data: urlData } = supabase.storage
-        .from("support-videos")
-        .getPublicUrl(storagePath);
-
-      const videoUrl = urlData.publicUrl;
-
-      if (!videoUrl) {
-        throw new Error("Could not retrieve the public URL from storage.");
-      }
-
-      // ------------------------------------------------------------------
-      // PHASE 3: Insert the metadata row into help_videos.
-      // ------------------------------------------------------------------
-
       setStatus({ stage: "saving" });
 
       const slug = slugify(title);
@@ -148,17 +88,13 @@ export default function NewVideoPage() {
           slug,
           description: description.trim() || null,
           category,
-          video_url: videoUrl,
+          video_url: videoLink.trim(),
           is_published: isPublished,
         });
 
       if (dbError) {
         throw new Error(`Database insert failed: ${dbError.message}`);
       }
-
-      // ------------------------------------------------------------------
-      // PHASE 4: Success — redirect or show confirmation.
-      // ------------------------------------------------------------------
 
       setStatus({ stage: "success", slug, category });
 
@@ -173,15 +109,9 @@ export default function NewVideoPage() {
 
   // ── Derived UI state ─────────────────────────────────────────────────────
 
-  const isSubmitting =
-    status.stage === "uploading" || status.stage === "saving";
+  const isSubmitting = status.stage === "saving";
 
-  const submitLabel =
-    status.stage === "uploading"
-      ? "Uploading video file, please wait…"
-      : status.stage === "saving"
-        ? "Saving metadata…"
-        : "Upload Video";
+  const submitLabel = status.stage === "saving" ? "Saving…" : "Add Video";
 
   // ── Render ────────────────────────────────────────────────────────────────
 
@@ -216,11 +146,10 @@ export default function NewVideoPage() {
         {/* ── Page header ── */}
         <div className="mb-8">
           <h1 className="text-2xl font-bold text-gray-900">
-            Upload Help Video
+            Add Help Video
           </h1>
           <p className="mt-1 text-sm text-gray-500">
-            Fill in the details below. The video uploads directly to cloud
-            storage — no file size limits.
+            Create a new help video by providing a title, category, description, and video link.
           </p>
         </div>
 
@@ -228,7 +157,7 @@ export default function NewVideoPage() {
         {status.stage === "success" && (
           <div className="mb-6 rounded-lg border border-green-200 bg-green-50 p-4">
             <p className="text-sm font-medium text-green-800">
-              ✓ Video uploaded successfully!
+              ✓ Video created successfully!
             </p>
             <div className="mt-2 flex gap-3">
               <button
@@ -247,14 +176,13 @@ export default function NewVideoPage() {
                 onClick={() => {
                   setTitle("");
                   setDescription("");
-                  setVideoFile(null);
+                  setVideoLink("");
                   setIsPublished(false);
                   setStatus({ stage: "idle" });
-                  if (fileInputRef.current) fileInputRef.current.value = "";
                 }}
                 className="text-sm text-green-700 underline hover:text-green-900"
               >
-                Upload another
+                Add another
               </button>
             </div>
           </div>
@@ -351,121 +279,31 @@ export default function NewVideoPage() {
             />
           </div>
 
-          {/* Video file input */}
+          {/* Video link input */}
           <div>
             <label
-              htmlFor="video"
+              htmlFor="videoLink"
               className="block text-sm font-medium text-gray-700"
             >
-              Video File <span className="text-red-500">*</span>
+              Video Link <span className="text-red-500">*</span>
             </label>
-
-            {/* Custom styled file drop zone */}
-            <label
-              htmlFor="video"
-              className={`mt-1.5 flex cursor-pointer flex-col items-center justify-center gap-2
-                          rounded-lg border-2 border-dashed px-6 py-8 text-center transition-colors
-                          ${
-                            isSubmitting
-                              ? "cursor-not-allowed border-gray-200 bg-gray-50"
-                              : videoFile
-                                ? "border-[#425b7d] bg-[#425b7d]/10"
-                                : "border-gray-300 bg-white hover:border-[#425b7d] hover:bg-[#425b7d]/10"
-                          }`}
-            >
-              {videoFile ? (
-                <>
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    className="h-8 w-8 text-[#425b7d]"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={1.5}
-                      d="M15 10l4.553-2.069A1 1 0 0121 8.82v6.361a1 1 0 01-1.447.894L15 14M3 8a2 2 0 012-2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V8z"
-                    />
-                  </svg>
-                  <span className="text-sm font-medium text-[#425b7d]">
-                    {videoFile.name}
-                  </span>
-                  <span className="text-xs text-[#425b7d]">
-                    {(videoFile.size / 1024 / 1024).toFixed(1)} MB — click to
-                    change
-                  </span>
-                </>
-              ) : (
-                <>
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    className="h-8 w-8 text-gray-400"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={1.5}
-                      d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
-                    />
-                  </svg>
-                  <span className="text-sm font-medium text-gray-600">
-                    Click to select or drag a video file
-                  </span>
-                  <span className="text-xs text-gray-400">
-                    MP4, MOV, WebM, AVI supported
-                  </span>
-                </>
-              )}
-            </label>
-
             <input
-              ref={fileInputRef}
-              id="video"
-              type="file"
-              accept="video/*"
-              onChange={handleFileChange}
+              id="videoLink"
+              type="url"
+              required
+              value={videoLink}
+              onChange={(e) => setVideoLink(e.target.value)}
+              placeholder="https://example.com/video.mp4 or https://youtube.com/watch?v=..."
               disabled={isSubmitting}
-              className="sr-only"
+              className="mt-1.5 block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900
+                         shadow-sm placeholder:text-gray-400 
+                         focus:border-[#425b7d] focus:outline-none focus:ring-1 focus:ring-[#425b7d]
+                         disabled:cursor-not-allowed disabled:bg-gray-100"
             />
+            <p className="mt-1.5 text-xs text-gray-500">
+              Enter the URL of your video. Supports direct video links (MP4, WebM, etc.) or embedded video URLs (YouTube, Vimeo, etc.)
+            </p>
           </div>
-
-          {/* Upload progress indicator */}
-          {status.stage === "uploading" && (
-            <div className="rounded-lg bg-[#425b7d]/5 px-4 py-3">
-              <div className="flex items-center gap-3">
-                {/* Spinner */}
-                <svg
-                  className="h-5 w-5 animate-spin text-[#425b7d]"
-                  xmlns="http://www.w3.org/2000/svg"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                >
-                  <circle
-                    className="opacity-25"
-                    cx="12"
-                    cy="12"
-                    r="10"
-                    stroke="currentColor"
-                    strokeWidth="4"
-                  />
-                  <path
-                    className="opacity-75"
-                    fill="currentColor"
-                    d="M4 12a8 8 0 018-8v8H4z"
-                  />
-                </svg>
-                <span className="text-sm font-medium text-[#425b7d]">
-                  Uploading video file directly to cloud storage — do not close
-                  this tab…
-                </span>
-              </div>
-            </div>
-          )}
 
           {/* Publish toggle */}
           <div className="flex items-center justify-between rounded-lg border border-gray-200 px-4 py-3">
@@ -501,7 +339,7 @@ export default function NewVideoPage() {
           {/* Submit */}
           <button
             type="submit"
-            disabled={isSubmitting || !videoFile}
+            disabled={isSubmitting || !videoLink.trim()}
             className="flex w-full items-center justify-center gap-2 rounded-lg bg-[#425b7d] px-4 py-2.5
                        text-sm font-semibold text-white shadow-sm transition-colors
                        hover:bg-[#425b7d]/90 focus:outline-none focus:ring-2 focus:ring-[#425b7d]

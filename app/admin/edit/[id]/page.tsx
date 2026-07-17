@@ -77,6 +77,7 @@ export default function EditVideoPage() {
       slug: newSlug,
       description: description.trim() || null,
       category,
+      video_url: videoUrl.trim(),
       is_published: isPublished,
     } satisfies Database['public']['Tables']['help_videos']['Update'];
 
@@ -128,7 +129,7 @@ export default function EditVideoPage() {
           <div>
             <button
               onClick={() => router.push("/admin")}
-              className="mb-2 text-sm text-[#425b7d] hover:text-[#2a354b] transition-colors"
+              className="mb-2 text-sm text-[#425b7d] hover:text-[#2a354b] transition-colors hover:underline"
             >
               ← Back to dashboard
             </button>
@@ -224,19 +225,24 @@ export default function EditVideoPage() {
             />
           </div>
 
-          {/* Video URL (read-only) */}
+          {/* Video URL (editable) */}
           <div>
             <label className="block text-sm font-medium text-[#2a354b] mb-1.5">
-              Video file
+              Video Link
             </label>
-            <p
-              className="rounded-lg border border-[#425b7d]/10 bg-[#425b7d]/5 px-3 py-2
-                          text-xs text-[#2a354b] font-mono break-all"
-            >
-              {videoUrl}
-            </p>
+            <input
+              type="url"
+              required
+              value={videoUrl}
+              onChange={(e) => setVideoUrl(e.target.value)}
+              disabled={isSubmitting}
+              className="w-full rounded-lg border border-[#425b7d]/10 bg-[#425b7d]/5 px-3 py-2
+                         text-sm text-[#2a354b] placeholder:text-gray-500
+                         focus:border-[#425b7d] focus:outline-none focus:ring-1
+                         focus:ring-[#425b7d] disabled:opacity-50"
+            />
             <p className="mt-1.5 text-xs text-gray-600">
-              To replace the video file, delete this entry and upload a new one.
+              Update the video link. Supports direct video URLs or embedded video links.
             </p>
           </div>
 

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { DeleteButton } from './DeleteButton'
 import { reorderVideos } from '../_actions/reorderVideos'
@@ -22,6 +22,11 @@ export function DraggableVideoTable({ videos: initialVideos }: DraggableVideoTab
   const [videos, setVideos] = useState(initialVideos)
   const [draggedId, setDraggedId] = useState<string | null>(null)
   const [isSaving, setIsSaving] = useState(false)
+
+  // Update videos when the filtered prop changes
+  useEffect(() => {
+    setVideos(initialVideos)
+  }, [initialVideos])
 
   const handleDragStart = (e: React.DragEvent, id: string) => {
     setDraggedId(id)
